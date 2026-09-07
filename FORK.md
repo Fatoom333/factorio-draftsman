@@ -11,7 +11,8 @@ cannot run `draftsman update` at all — see the third issue below.
 
 ## Branch
 
-`3.3.1-forge` — upstream `3.3.1` plus the two patches. Version reports as `3.3.1+forge.1`.
+`3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as
+`3.3.1+forge.2`.
 
 ## What is patched
 
@@ -41,6 +42,27 @@ The condition now tests whether the prototype is present, which is what `get_sig
 same file already does for exactly this reason.
 
 Reported upstream with the patch.
+
+### `feature_flags` never reached mods
+
+`run_data_lifecycle` built the `feature_flags` global by formatting a Python
+boolean into Lua source:
+
+```python
+sa_enabled="space-age" in owned_dlc
+```
+
+`"{}".format(True)` produces `True`, but Lua's boolean literals are lowercase.
+`True` and `False` are therefore read as undefined globals, so every flag came
+out `nil` — the same result whether the expansion was owned or not.
+
+The visible symptom is that `--no-dlc` changed nothing. The real cost is
+quieter: a mod that gates content on `feature_flags.quality` or
+`feature_flags.freezing` silently contributed the wrong variant, and the
+extracted data was wrong with no error anywhere. It also affects mods that
+compare a flag against `false` explicitly, since `nil == false` is false.
+
+The flag is now emitted as `true` or `false`.
 
 ## Related upstream issue
 

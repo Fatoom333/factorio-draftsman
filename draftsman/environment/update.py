@@ -655,7 +655,10 @@ def run_data_lifecycle(
             expansion_shaders={sa_enabled},
         }}
         """.format(
-            sa_enabled="space-age" in owned_dlc
+            # Lua's boolean literals are lowercase. Formatting a Python bool
+            # here emits `True`/`False`, which Lua reads as undefined globals,
+            # so every flag came out nil whatever the DLC state.
+            sa_enabled="true" if "space-age" in owned_dlc else "false"
         )
     )
 
