@@ -10,6 +10,16 @@
 REQUIRE_STACK = {}  -- Stack of files representing the current `require()` tree
 MOD_STACK = {}      -- Stack of mods keeping track of where to `require()` files
 
+-- Cache of already-required files, keyed by their fully resolved path rather
+-- than by the name the mod happened to write. Two mods that both contain
+-- "utils.lua" resolve to different paths and so cannot collide, while a single
+-- mod requiring its own file twice gets the same value back both times, as it
+-- would in Factorio.
+MODULE_CACHE = {}
+-- `require` caches files that return nothing as well, so a sentinel is needed
+-- to tell "loaded, returned nil" apart from "not loaded yet".
+local NIL_MODULE = {}
+
 -- ================
 -- Versioning Fixes
 -- ================
@@ -235,18 +245,26 @@ function require(module_name)
     -- have the correct new filename
     table.insert(REQUIRE_STACK, current_file)
 
-    -- Call the original C Lua require function.
-    -- We MUST use the original `module_name` here, otherwise mod behaviors that
-    -- specifically look for this string will fail in creative ways 
-    -- (pyanodons, flib, Kuxynators)
-    result = lua_require(module_name)
+    local cached = MODULE_CACHE[current_file]
+    if cached ~= nil then
+        -- This exact file has already been required during this stage, so hand
+        -- back the same value instead of running it again. Mods commonly have
+        -- one file return a table and another file add to it; re-running the
+        -- file would hand out a fresh table and lose those additions.
+        result = cached ~= NIL_MODULE and cached or nil
+    else
+        -- Call the original C Lua require function.
+        -- We MUST use the original `module_name` here, otherwise mod behaviors that
+        -- specifically look for this string will fail in creative ways
+        -- (pyanodons, flib, Kuxynators)
+        result = lua_require(module_name)
 
-    -- After the file is required, we reset it's cache so subsequent requires
-    -- of the same filename will run through the require process again.
-    -- This won't reload children files in parents that require them simply, but
-    -- it ensures that when two different files share the same exact filename
-    -- both will be loaded properly
-    package.loaded[module_name] = nil
+        -- Clear Lua's own cache, which is keyed by the name as written and so
+        -- would let one mod's "utils" satisfy another mod's "utils". Ours is
+        -- keyed by resolved path, so it can be kept safely.
+        package.loaded[module_name] = nil
+        MODULE_CACHE[current_file] = result ~= nil and result or NIL_MODULE
+    end
 
     -- After the require function finishes, the current file can be popped off
     table.remove(REQUIRE_STACK)
@@ -389,6 +407,9 @@ end
 function lua_unload_cache()
     for k in pairs(package.loaded) do
         package.loaded[k] = nil
+    end
+    for k in pairs(MODULE_CACHE) do
+        MODULE_CACHE[k] = nil
     end
 end
 

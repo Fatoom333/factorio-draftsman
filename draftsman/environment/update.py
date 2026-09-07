@@ -873,7 +873,10 @@ def get_items(lua, game_version: tuple[int, int, int, int]):
     add_items(data.raw["repair-tool"])  # not an item somehow
     add_items(data.raw["rail-planner"])
     add_items(data.raw["copy-paste-tool"])
-    if game_version >= (2, 0):
+    # Depending on configuration, some items might not exist: this one is a
+    # Space Age prototype, so it is absent whenever that expansion is not
+    # loaded, regardless of the game version. Same test as `get_signals` uses.
+    if "space-platform-starter-pack" in data.raw:
         add_items(data.raw["space-platform-starter-pack"])
 
     # Sort everything
