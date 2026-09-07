@@ -374,6 +374,39 @@ class Rectangle(Shape):
         )
 
 
+def bounding_box_corners(
+    box,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """
+    Reads a prototype's bounding box however it happened to be written.
+
+    Factorio accepts a corner positionally, as ``{-1, -1}``, or by name, as
+    ``{x = -1, y = -1}``, and accepts the box itself either as a pair of corners
+    or as ``{left_top = ..., right_bottom = ...}``. A prototype may also supply
+    a corner both ways at once, producing a table with keys ``1``, ``2``, ``x``
+    and ``y``; ``convert_table_to_dict`` treats a table as an array only when
+    every key is an integer, so such a corner arrives as a mapping and cannot be
+    indexed positionally.
+
+    :param box: A bounding box in any of the accepted forms.
+
+    :returns: ``((left, top), (right, bottom))``.
+    """
+
+    def corner(point):
+        if isinstance(point, dict):
+            return point.get("x", point.get(1)), point.get("y", point.get(2))
+        return point[0], point[1]
+
+    if isinstance(box, dict):
+        left_top = box.get("left_top", box.get(1))
+        right_bottom = box.get("right_bottom", box.get(2))
+    else:
+        left_top, right_bottom = box[0], box[1]
+
+    return corner(left_top), corner(right_bottom)
+
+
 # =============================================================================
 # Encoding/Decoding Operations
 # =============================================================================

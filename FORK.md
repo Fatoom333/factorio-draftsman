@@ -12,7 +12,7 @@ cannot run `draftsman update` at all — see the third issue below.
 ## Branch
 
 `3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as
-`3.3.1+forge.2`.
+`3.3.1+forge.3`.
 
 ## What is patched
 
@@ -63,6 +63,42 @@ extracted data was wrong with no error anywhere. It also affects mods that
 compare a flag against `false` explicitly, since `nil == false` is false.
 
 The flag is now emitted as `true` or `false`.
+
+### A bounding box written both ways at once was unreadable
+
+Factorio accepts a bounding-box corner positionally, as `{-1, -1}`, or by name,
+as `{x = -1, y = -1}`, and accepts the box itself either as a pair or as
+`{left_top = ..., right_bottom = ...}`. A prototype may also supply a corner
+both ways at once.
+
+`convert_table_to_dict` treats a Lua table as an array only when every key is an
+integer, so a plain corner arrives as a list and a mixed one as a mapping. Two
+places then read the corner positionally, which works for the first and raises
+`KeyError: 0` for the second. Vanilla `spidertron` is written plainly and loads;
+`warptorio-warpspider` carries both forms and takes the whole extraction down
+with it.
+
+Reading a corner is now done by one helper, `utils.bounding_box_corners`, which
+accepts every accepted form, and both call sites use it.
+
+### An entity mined into an item that was not extracted took everything down
+
+`get_order` sorts an entity by the item it becomes when mined, and read that
+item straight out of the item table:
+
+```python
+associated_item = object_to_sort["minable"]["result"]
+...
+sort_name = sort_objects[associated_item]["name"]   # KeyError
+```
+
+Nothing guarantees the mined result is an item we know about — a mod can name
+one that is hidden, or that another mod removed. The fallback branch a few lines
+below already tested membership before trusting a name; the first path now does
+the same and falls back rather than raising.
+
+Found through `warptorio-harvestpad-tag-5`, which is minable into an item that
+does not survive extraction.
 
 ## Related upstream issue
 

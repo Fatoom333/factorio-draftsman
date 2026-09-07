@@ -21,7 +21,12 @@ from draftsman.error import (
     IncompatableModError,
     IncorrectModVersionError,
 )
-from draftsman.utils import AABB, version_string_to_tuple, version_tuple_to_string
+from draftsman.utils import (
+    AABB,
+    bounding_box_corners,
+    version_string_to_tuple,
+    version_tuple_to_string,
+)
 
 import git
 import lupa.lua52 as lupa
@@ -72,9 +77,18 @@ def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):
             # now
             associated_item = object_to_sort["minable"]["result"]
         except KeyError:
-            # If not, check the list of items to see if our name is in there
-            if object_to_sort["name"] in sort_objects:
-                associated_item = object_to_sort["name"]
+            pass
+
+        # The mined result is not necessarily an item we know about: a mod can
+        # name one that is hidden, or removed by another mod. Fall back to the
+        # entity's own name in that case, which is the same check the branch
+        # below already made before trusting it.
+        if associated_item not in sort_objects:
+            associated_item = (
+                object_to_sort["name"]
+                if object_to_sort["name"] in sort_objects
+                else None
+            )
 
         if associated_item:
             # Get the name of the sorted item; we sort by this before we sort by
@@ -1304,16 +1318,8 @@ def extract_entities(
     for name in raw_order:
         collision_box = entities["raw"][name].get("collision_box", None)
         if collision_box:
-            collision_sets[name] = CollisionSet(
-                [
-                    AABB(
-                        collision_box[0][0],
-                        collision_box[0][1],
-                        collision_box[1][0],
-                        collision_box[1][1],
-                    )
-                ]
-            )
+            (left, top), (right, bottom) = bounding_box_corners(collision_box)
+            collision_sets[name] = CollisionSet([AABB(left, top, right, bottom)])
         else:
             collision_sets[name] = CollisionSet([])
 
