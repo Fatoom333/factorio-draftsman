@@ -1,3 +1,19 @@
+> ### This is a fork
+>
+> Not the upstream project. Go to
+> **[redruin1/factorio-draftsman](https://github.com/redruin1/factorio-draftsman)**
+> for the real thing, its releases and its issue tracker.
+>
+> This fork exists only to carry five fixes that are not in a release yet, so that
+> [factorio-forge](https://github.com/Fatoom333/factorio-forge) has a working dependency in the
+> meantime. All five are reported upstream or written up for it, and the fork is abandoned once
+> they ship. See **[FORK.md](FORK.md)** for what each one is.
+>
+> The fixes live on the `3.3.1-forge` branch, cut from the `3.3.1` tag. Everything below is
+> upstream's own README, unchanged.
+
+---
+
 # factorio-draftsman
 
 ![A logo generated with 'examples/draftsman_logo.py'](https://github.com/redruin1/factorio-draftsman/raw/main/docs/img/logo.png)
