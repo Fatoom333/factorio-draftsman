@@ -1,23 +1,23 @@
 # About this fork
 
 This is a fork of [redruin1/factorio-draftsman](https://github.com/redruin1/factorio-draftsman)
-carrying five fixes that have been reported upstream, or are about to be, but are not in a
+carrying seven fixes that have been reported upstream, or are about to be, but are not in a
 release. It exists so that [factorio-forge](https://github.com/Fatoom333/factorio-forge) can
 depend on a working version in the meantime, and it is meant to be temporary: once the fixes
 land upstream, the dependency goes back to the released package and this branch is abandoned.
 
-Nothing is changed beyond those five fixes, a version marker and this file.
+Nothing is changed beyond those seven fixes, a version marker and this file.
 
 The branch is cut from the `3.3.1` tag rather than from `main`, because 4.0.0 cannot run
 `draftsman update` at all — see [Related upstream issue](#related-upstream-issue) at the end.
 
 ## Branch
 
-`3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as `3.3.1+forge.3`.
+`3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as `3.3.1+forge.4`.
 
 ## What is patched
 
-Four of the five share a shape, and it is worth naming because it predicts where the next one
+Four of the first five share a shape, and it is worth naming because it predicts where the next one
 will be: the code trusts prototype data to take one particular form when Factorio accepts
 several, or to reference something that is not guaranteed to exist. Vanilla data always
 satisfies those assumptions, so nothing surfaces until a mod does something equally legal and
@@ -114,6 +114,42 @@ raising.
 
 Found through `warptorio-harvestpad-tag-5`, which is minable into an item that does not survive
 extraction.
+
+### An inserter's stated pickup and drop positions were treated as adjustments
+
+*Written up for upstream; not yet filed.*
+
+`Inserter.pickup_position` and `.drop_position` added the blueprint's stated position on top of
+the prototype's own, rotated by the entity's direction:
+
+```python
+return self.global_position + rotate(self.prototype["pickup_position"]) + self.pickup_position_offset
+```
+
+But a blueprint that states a position states the whole of it, already oriented. The game
+writes the offset from the entity, not a correction to the default.
+
+The arithmetic makes the difference plain. A south facing `fast-inserter` at (-49.5, -44.5),
+exported by the game with `pickup_position: [1, -1]` and `drop_position: [1.203125, 1.203125]`:
+read as stated it takes from the north east and drops to the south east, which is exactly what
+Bob's Inserters offers. Read as adjustments, both land due east — a pickup at one tile and a
+drop at 1.2 tiles on the same side, an inserter moving items a fifth of a tile.
+
+Measured across 298 inserters in one exported city block: read as stated, the pickups land on
+belts, underground belts and chests, and on no inserter at all. Read as adjustments, 34 of them
+take from another inserter, and the checker built on those numbers reported 34 inserters
+feeding themselves.
+
+The properties now return the stated position when there is one and the prototype's default
+when there is not. Vanilla inserters, which state nothing, are unaffected: a north facing
+`inserter` at (5, 5) still picks up at (5.5, 4.5) and drops at (5.5, 6.7).
+
+### A debug print left in the constant combinator
+
+*Trivial; written up for upstream.*
+
+`ConstantCombinator.add_section` printed `add_section` to standard output on every call, which
+put the word into the output of anything that sets a signal. Removed.
 
 ## Related upstream issue
 

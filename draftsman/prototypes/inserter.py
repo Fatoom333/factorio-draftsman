@@ -63,6 +63,16 @@ class Inserter(
         :py:attr:`.pickup_position_offset`. If this entity has no known
         prototype or pickup offset, then both default to ``(0, 0)``.
         """
+        stated = self.pickup_position_offset
+        if stated is not None and (stated.x or stated.y):
+            # A blueprint that states a position is stating the whole of it,
+            # already oriented: the game writes the offset from the entity, not
+            # a correction to the prototype's default. Adding the default on
+            # top puts the hand somewhere the game never had it -- for a south
+            # facing inserter with a stated (1, -1) it lands due east, on the
+            # same side as the drop, which no inserter does.
+            return self.global_position + stated
+
         try:
             direction_matrix = {
                 Direction.NORTH: lambda p: p,
@@ -75,7 +85,7 @@ class Inserter(
             )
         except KeyError:  # Unknown entity/direction case
             pickup_position = (0, 0)
-        return self.global_position + pickup_position + self.pickup_position_offset
+        return self.global_position + pickup_position
 
     # =========================================================================
 
@@ -90,6 +100,12 @@ class Inserter(
         :py:attr:`.pickup_position_offset`. If this entity has no known
         prototype or pickup offset, then both default to ``(0, 0)``.
         """
+        stated = self.drop_position_offset
+        if stated is not None and (stated.x or stated.y):
+            # As with the pickup: what a blueprint states is the position, not
+            # an adjustment to the default.
+            return self.global_position + stated
+
         try:
             direction_matrix = {
                 Direction.NORTH: lambda p: p,
@@ -102,7 +118,7 @@ class Inserter(
             )
         except KeyError:  # Unknown entity/direction case
             drop_position = (0, 0)
-        return self.global_position + drop_position + self.drop_position_offset
+        return self.global_position + drop_position
 
     # =========================================================================
 
