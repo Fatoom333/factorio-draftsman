@@ -13,7 +13,7 @@ The branch is cut from the `3.3.1` tag rather than from `main`, because 4.0.0 ca
 
 ## Branch
 
-`3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as `3.3.1+forge.5`.
+`3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as `3.3.1+forge.6`.
 
 ## What is patched
 
@@ -96,7 +96,7 @@ form the game accepts, and both call sites use it.
 
 ### An entity mined into an item that was not extracted took everything down
 
-*Written up for upstream; not yet filed.*
+*Reported upstream as [#232](https://github.com/redruin1/factorio-draftsman/issues/232).*
 
 `get_order` sorts an entity by the item it becomes when mined, and read that item straight out
 of the item table:
@@ -107,13 +107,25 @@ associated_item = object_to_sort["minable"]["result"]
 sort_name = sort_objects[associated_item]["name"]   # KeyError
 ```
 
-Nothing guarantees the mined result is an item we know about — a mod can name one that is
-hidden, or that another mod removed. The fallback branch a few lines below already tested
-membership before trusting a name; the first path now does the same and falls back rather than
-raising.
+The first attempt at this patch treated a missing item as something the API allows — a mod
+naming one that is hidden, or that another mod removed — and fell back to the entity's own name
+when that happened. That diagnosis was wrong: `minable.result` is guaranteed by the API to name
+a real item, so a lookup miss here means Draftsman's own item extraction dropped one, not that
+the mod referenced something invalid.
 
-Found through `warptorio-harvestpad-tag-5`, which is minable into an item that does not survive
-extraction.
+It did drop one. `warptorio-harvestpad-tag-5` is an ordinary, non-hidden, placeable item — it
+just uses `item-with-tags` as its base prototype type instead of plain `item` (the warptorio
+harvester's `makePortal()` helper picks that type for its tagged variants). `extract_items()`
+and `extract_signals()` in `draftsman/environment/update.py` build the item table from an
+explicit list of prototype categories, and `item-with-tags` — along with `item-with-label` and
+`item-with-inventory` — was never in that list, on the assumption that all three are always
+abstract, script-only template types that can't appear in a blueprint. That assumption holds for
+vanilla but not for this mod.
+
+`get_order` is back to its original form. The fix is now at the source: `extract_items()` and
+`extract_signals()` pull in `item-with-tags`, `item-with-label` and `item-with-inventory`
+alongside the other item categories whenever a mod set defines them, the same way
+`space-platform-starter-pack` is already guarded for mod sets that don't define it.
 
 ### An inserter's stated pickup and drop positions were treated as adjustments
 
