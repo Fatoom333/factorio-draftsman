@@ -77,18 +77,9 @@ def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):
             # now
             associated_item = object_to_sort["minable"]["result"]
         except KeyError:
-            pass
-
-        # The mined result is not necessarily an item we know about: a mod can
-        # name one that is hidden, or removed by another mod. Fall back to the
-        # entity's own name in that case, which is the same check the branch
-        # below already made before trusting it.
-        if associated_item not in sort_objects:
-            associated_item = (
-                object_to_sort["name"]
-                if object_to_sort["name"] in sort_objects
-                else None
-            )
+            # If not, check the list of items to see if our name is in there
+            if object_to_sort["name"] in sort_objects:
+                associated_item = object_to_sort["name"]
 
         if associated_item:
             # Get the name of the sorted item; we sort by this before we sort by
@@ -890,6 +881,20 @@ def get_items(lua, game_version: tuple[int, int, int, int]):
     add_items(data.raw["repair-tool"])  # not an item somehow
     add_items(data.raw["rail-planner"])
     add_items(data.raw["copy-paste-tool"])
+    # These three are usually generic template items meant for scripting, not
+    # something a prototype is minable into - but nothing in the API stops a
+    # mod from using one as the base type for an ordinary placeable, minable
+    # item anyway (warptorio-harvestpad-tag-5 is an "item-with-tags" item with
+    # no "hidden" flag, a real icon, and a place_result, exactly like "item").
+    # Skipping them here left such items out of the item table entirely, which
+    # then surfaced downstream in get_order as a missing "minable.result".
+    for template_item_category in (
+        "item-with-tags",
+        "item-with-label",
+        "item-with-inventory",
+    ):
+        if template_item_category in data.raw:
+            add_items(data.raw[template_item_category])
     # Depending on configuration, some items might not exist: this one is a
     # Space Age prototype, so it is absent whenever that expansion is not
     # loaded, regardless of the game version. Same test as `get_signals` uses.
@@ -1641,6 +1646,9 @@ def extract_signals(
     add_signals("spidertron-remote", item_signals, "item")
     add_signals("repair-tool", item_signals, "item")  # not an item somehow
     add_signals("rail-planner", item_signals, "item")
+    add_signals("item-with-tags", item_signals, "item")
+    add_signals("item-with-label", item_signals, "item")
+    add_signals("item-with-inventory", item_signals, "item")
     add_signals("space-platform-starter-pack", item_signals, "item")
 
     # Fluid Signals
