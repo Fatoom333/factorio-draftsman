@@ -1,19 +1,19 @@
 # About this fork
 
 This is a fork of [redruin1/factorio-draftsman](https://github.com/redruin1/factorio-draftsman)
-carrying seven fixes that have been reported upstream, or are about to be, but are not in a
+carrying eight fixes that have been reported upstream, or are about to be, but are not in a
 release. It exists so that [factorio-forge](https://github.com/Fatoom333/factorio-forge) can
 depend on a working version in the meantime, and it is meant to be temporary: once the fixes
 land upstream, the dependency goes back to the released package and this branch is abandoned.
 
-Nothing is changed beyond those seven fixes, a version marker and this file.
+Nothing is changed beyond those eight fixes, a version marker and this file.
 
 The branch is cut from the `3.3.1` tag rather than from `main`, because 4.0.0 cannot run
 `draftsman update` at all — see [Related upstream issue](#related-upstream-issue) at the end.
 
 ## Branch
 
-`3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as `3.3.1+forge.4`.
+`3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as `3.3.1+forge.5`.
 
 ## What is patched
 
@@ -143,6 +143,43 @@ feeding themselves.
 The properties now return the stated position when there is one and the prototype's default
 when there is not. Vanilla inserters, which state nothing, are unaffected: a north facing
 `inserter` at (5, 5) still picks up at (5.5, 4.5) and drops at (5.5, 6.7).
+
+### `encode_mod_settings` could not write a readable `mod-settings.dat`
+
+*Written up for upstream; not yet filed.*
+
+`draftsman/environment/mod_settings.py` writes the counterpart to
+`decode_mod_settings`, but the two did not agree with each other, and neither
+call in it could even run:
+
+```python
+destination.write(struct.pack("<Q"), version_num)   # TypeError: pack expected 1 items for packing (got 0)
+```
+
+`struct.pack("<Q")` is called with no value and the result is written; `version_num`
+is left as a second, unused argument to `write`, which itself takes only one.
+The same mistake repeats one line below for the header flag.
+
+Past that immediate crash, `write_string` never wrote the presence byte that
+`read_string` reads first (`string_absent = bool(struct.unpack("<?", ...))`), so
+every string in the tree would have come out shifted by one byte on the far
+side of a round trip, and it measured length in Python characters rather than
+encoded bytes — wrong for anything outside ASCII. Separately, the dictionary
+branch of `write_node` tested `type(dict) is dict`, comparing the builtin
+`dict` against itself rather than checking `node`, so that branch could never
+run and no nested table was ever encoded — which matters because `ModSettings`
+*is* nested tables: `{"startup": {name: {"value": ...}, ...}, ...}`.
+
+Fixed by correcting the two `struct.pack` calls, having `write_string` write a
+presence byte ahead of a byte-accurate length, and comparing `type(node) is
+dict`. A dictionary's own keys are bare strings from the perspective of
+`decode_mod_settings` (`read_string` is called on them directly, never through
+`read_node`), so the fix also splits the type-tagged and bare string writers
+into two functions rather than reusing one for both roles.
+
+Verified by round-tripping a settings tree covering every scalar type through
+`encode_mod_settings` then `decode_mod_settings` and comparing to the original;
+see the fork's commit for the exact tree used.
 
 ### A debug print left in the constant combinator
 
