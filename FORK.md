@@ -2,18 +2,22 @@
 
 This is a fork of [redruin1/factorio-draftsman](https://github.com/redruin1/factorio-draftsman)
 carrying eight fixes that have been reported upstream, or are about to be, but are not in a
-release. It exists so that [factorio-forge](https://github.com/Fatoom333/factorio-forge) can
-depend on a working version in the meantime, and it is meant to be temporary: once the fixes
-land upstream, the dependency goes back to the released package and this branch is abandoned.
+release, plus one addition that is not a fix and is not going upstream (see
+[What is added](#what-is-added)). It exists so that
+[factorio-forge](https://github.com/Fatoom333/factorio-forge) can depend on a working version in
+the meantime, and the patches are meant to be temporary: once they land upstream, the dependency
+goes back to the released package for those, and only the addition stays behind as a permanent
+local difference.
 
-Nothing is changed beyond those eight fixes, a version marker and this file.
+Nothing is changed beyond those eight fixes, the one addition, a version marker and this file.
 
 The branch is cut from the `3.3.1` tag rather than from `main`, because 4.0.0 cannot run
 `draftsman update` at all — see [Related upstream issue](#related-upstream-issue) at the end.
 
 ## Branch
 
-`3.3.1-forge` — upstream `3.3.1` plus the patches below. Version reports as `3.3.1+forge.6`.
+`3.3.1-forge` — upstream `3.3.1` plus the patches and the addition below. Version reports as
+`3.3.1+forge.7`.
 
 ## What is patched
 
@@ -199,6 +203,35 @@ see the fork's commit for the exact tree used.
 
 `ConstantCombinator.add_section` printed `add_section` to standard output on every call, which
 put the word into the output of anything that sets a signal. Removed.
+
+## What is added
+
+Unlike the eight fixes above, this is not a bug and will not be reported upstream: it is a
+feature `draftsman` leaves out on purpose, and forge needs it anyway.
+
+### Resource entities (`data.raw["resource"]`) are now extracted too
+
+`draftsman/data/entities.py` walks a fixed list of prototype types that can be placed in a
+blueprint, and `"resource"` — ore patches, crude-oil wells, and the like — is not on it,
+correctly: a resource patch cannot be blueprinted. That leaves nothing anywhere in draftsman's
+extracted data recording which items and fluids are actually mined rather than crafted, which
+`resource_category` a mining drill needs to reach one, or what a patch that needs an input fluid
+(`required_fluid`/`fluid_amount`, uranium ore) requires. Forge needs exactly that to tell a raw
+material apart from a crafted one without guessing from `subgroup` alone — see `CONTEXT.md`
+in `factorio-forge` for why `subgroup` alone is not reliable (Krastorio 2 has a coal filtration
+recipe, which makes coal look craftable by name even though it is still mined).
+
+The Lua runtime that produces every other extracted category already has the full
+`data.raw["resource"]` table available (extraction runs the game's real data stage; only the
+existing extractors choose not to read this part of it), so a new `extract_resources` follows
+the exact shape of `extract_fluids`/`extract_tiles` and writes it to `resources.pkl`, loaded by
+a new `draftsman.data.resources` the same way every other category is loaded. Nothing existing
+is touched.
+
+This will never be merged upstream and removed the way the eight fixes above eventually will:
+`draftsman`'s own scope is blueprintable entities, and a resource patch is correctly excluded
+from that. It is documented here, separately from the patches, so that stays clear if this
+branch is ever revisited once the patches above land and get dropped.
 
 ## Related upstream issue
 
