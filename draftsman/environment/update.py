@@ -1886,6 +1886,36 @@ def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fal
         print("Extracted tiles...")
 
 
+# =============================================================================
+
+
+def extract_resources(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False):
+    """
+    Extracts the resource entities (ore patches, crude-oil, and the like) to
+    ``resources.pkl`` in :py:mod:`draftsman.data`.
+
+    Resource entities (``data.raw["resource"]``) are not blueprintable, so
+    they are absent from :py:mod:`draftsman.data.entities` entirely -- that
+    module only walks a fixed list of placeable prototype types. They carry
+    the one piece of information the game itself uses to tell a mined raw
+    material apart from a crafted one: ``category`` (exposed on the live
+    ``LuaEntityPrototype`` as ``resource_category``) and ``minable``, which
+    names what mining the patch actually yields.
+    """
+    data = lua.globals().data
+
+    if "resource" not in data.raw:
+        resources = {}
+    else:
+        resources = convert_table_to_dict(data.raw["resource"])
+
+    with open(os.path.join(draftsman_path, "data", "resources.pkl"), "wb") as out:
+        pickle.dump(resources, out, 4)
+
+    if verbose:
+        print("Extracted resources...")
+
+
 def extract_data(
     lua: lupa.LuaRuntime,
     draftsman_path: str,
@@ -1926,6 +1956,7 @@ def extract_data(
     extract_planets(lua, draftsman_path, verbose)
     extract_qualities(lua, draftsman_path, items, verbose)
     extract_recipes(lua, draftsman_path, items, verbose)
+    extract_resources(lua, draftsman_path, verbose)
     extract_signals(lua, draftsman_path, items, verbose)
     extract_tiles(lua, draftsman_path, verbose)
 
