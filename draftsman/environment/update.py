@@ -1943,6 +1943,33 @@ def extract_asteroid_chunks(lua: lupa.LuaRuntime, draftsman_path: str, verbose: 
         print("Extracted asteroid chunks...")
 
 
+def extract_surfaces(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False):
+    """
+    Extracts surface prototypes and surface property prototypes to
+    ``surfaces.pkl`` in :py:mod:`draftsman.data`.
+
+    A planet is one kind of surface; Space Age also defines
+    ``data.raw["surface"]`` for surfaces that are not planets, the space
+    platform among them, with their own ``surface_properties``.
+    :py:mod:`draftsman.data.planets` holds only planets. The
+    ``surface-property`` prototypes carry each property's ``default_value``,
+    which is what a surface that does not state a property has -- the value a
+    recipe's or entity's ``surface_conditions`` is then checked against.
+    """
+    data = lua.globals().data
+
+    surfaces = convert_table_to_dict(data.raw["surface"]) if "surface" in data.raw else {}
+    properties = (
+        convert_table_to_dict(data.raw["surface-property"]) if "surface-property" in data.raw else {}
+    )
+
+    with open(os.path.join(draftsman_path, "data", "surfaces.pkl"), "wb") as out:
+        pickle.dump([surfaces, properties], out, 4)
+
+    if verbose:
+        print("Extracted surfaces...")
+
+
 def extract_data(
     lua: lupa.LuaRuntime,
     draftsman_path: str,
@@ -1985,6 +2012,7 @@ def extract_data(
     extract_recipes(lua, draftsman_path, items, verbose)
     extract_resources(lua, draftsman_path, verbose)
     extract_asteroid_chunks(lua, draftsman_path, verbose)
+    extract_surfaces(lua, draftsman_path, verbose)
     extract_signals(lua, draftsman_path, items, verbose)
     extract_tiles(lua, draftsman_path, verbose)
 
