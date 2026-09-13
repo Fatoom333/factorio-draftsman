@@ -2,22 +2,22 @@
 
 This is a fork of [redruin1/factorio-draftsman](https://github.com/redruin1/factorio-draftsman)
 carrying eight fixes that have been reported upstream, or are about to be, but are not in a
-release, plus one addition that is not a fix and is not going upstream (see
+release, plus additions that are not fixes and are not going upstream (see
 [What is added](#what-is-added)). It exists so that
 [factorio-forge](https://github.com/Fatoom333/factorio-forge) can depend on a working version in
 the meantime, and the patches are meant to be temporary: once they land upstream, the dependency
-goes back to the released package for those, and only the addition stays behind as a permanent
+goes back to the released package for those, and only the additions stay behind as a permanent
 local difference.
 
-Nothing is changed beyond those eight fixes, the one addition, a version marker and this file.
+Nothing is changed beyond those eight fixes, the additions, a version marker and this file.
 
 The branch is cut from the `3.3.1` tag rather than from `main`, because 4.0.0 cannot run
 `draftsman update` at all — see [Related upstream issue](#related-upstream-issue) at the end.
 
 ## Branch
 
-`3.3.1-forge` — upstream `3.3.1` plus the patches and the addition below. Version reports as
-`3.3.1+forge.7`.
+`3.3.1-forge` — upstream `3.3.1` plus the patches and the additions below. Version reports as
+`3.3.1+forge.8`.
 
 ## What is patched
 
@@ -206,8 +206,8 @@ put the word into the output of anything that sets a signal. Removed.
 
 ## What is added
 
-Unlike the eight fixes above, this is not a bug and will not be reported upstream: it is a
-feature `draftsman` leaves out on purpose, and forge needs it anyway.
+Unlike the eight fixes above, these are not bugs and will not be reported upstream: they are
+parts of the game's data `draftsman` leaves out on purpose, and forge needs them anyway.
 
 ### Resource entities (`data.raw["resource"]`) are now extracted too
 
@@ -232,6 +232,25 @@ This will never be merged upstream and removed the way the eight fixes above eve
 `draftsman`'s own scope is blueprintable entities, and a resource patch is correctly excluded
 from that. It is documented here, separately from the patches, so that stays clear if this
 branch is ever revisited once the patches above land and get dropped.
+
+### Asteroid chunks (`data.raw["asteroid-chunk"]`) are extracted the same way
+
+The other thing Space Age gathers rather than crafts. An asteroid collector grabs chunks in space,
+and a chunk's `minable` names the item that yields; without it the chunk items only appear as
+results of reprocessing recipes, which turn chunks into chunks, so a chain needing a chunk had no
+source at all. `extract_asteroid_chunks` writes `asteroid_chunks.pkl`, loaded by
+`draftsman.data.asteroid_chunks`, in the same shape as the resources above; for a mod set without
+Space Age it is empty.
+
+### The committed default data carries both
+
+The data files committed on this branch are what an installation without a profile reads — CI,
+for one. `resources.pkl` and `asteroid_chunks.pkl` there are extracted from Factorio 2.0.77 with
+base, Space Age, Quality and Elevated Rails, the same set the other committed files come from.
+Before, the default data had neither, so every Space Age item mined rather than crafted
+(calcite, tungsten ore, the chunks) looked impossible to obtain. The other committed files are
+left as they were: re-extracting the same set reproduces them apart from the recipe-order noise
+described under **Verified**.
 
 ## Related upstream issue
 
