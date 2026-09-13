@@ -1916,6 +1916,33 @@ def extract_resources(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool =
         print("Extracted resources...")
 
 
+def extract_asteroid_chunks(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False):
+    """
+    Extracts the asteroid chunk prototypes (Space Age) to
+    ``asteroid_chunks.pkl`` in :py:mod:`draftsman.data`.
+
+    An asteroid chunk (``data.raw["asteroid-chunk"]``) is what an asteroid
+    collector grabs in space, and its ``minable`` names the item that
+    collecting it yields. Like a resource entity it is the only place the
+    game states that the item is gathered rather than crafted -- the chunk
+    items also appear as results of reprocessing recipes, which consume
+    chunks to make chunks and so cannot be where they come from. Chunks are
+    not blueprintable, so :py:func:`extract_entities` never sees them.
+    """
+    data = lua.globals().data
+
+    if "asteroid-chunk" not in data.raw:
+        chunks = {}
+    else:
+        chunks = convert_table_to_dict(data.raw["asteroid-chunk"])
+
+    with open(os.path.join(draftsman_path, "data", "asteroid_chunks.pkl"), "wb") as out:
+        pickle.dump(chunks, out, 4)
+
+    if verbose:
+        print("Extracted asteroid chunks...")
+
+
 def extract_data(
     lua: lupa.LuaRuntime,
     draftsman_path: str,
@@ -1957,6 +1984,7 @@ def extract_data(
     extract_qualities(lua, draftsman_path, items, verbose)
     extract_recipes(lua, draftsman_path, items, verbose)
     extract_resources(lua, draftsman_path, verbose)
+    extract_asteroid_chunks(lua, draftsman_path, verbose)
     extract_signals(lua, draftsman_path, items, verbose)
     extract_tiles(lua, draftsman_path, verbose)
 
