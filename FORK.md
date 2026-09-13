@@ -17,7 +17,7 @@ The branch is cut from the `3.3.1` tag rather than from `main`, because 4.0.0 ca
 ## Branch
 
 `3.3.1-forge` — upstream `3.3.1` plus the patches and the additions below. Version reports as
-`3.3.1+forge.8`.
+`3.3.1+forge.9`.
 
 ## What is patched
 
@@ -242,12 +242,23 @@ source at all. `extract_asteroid_chunks` writes `asteroid_chunks.pkl`, loaded by
 `draftsman.data.asteroid_chunks`, in the same shape as the resources above; for a mod set without
 Space Age it is empty.
 
-### The committed default data carries both
+### Surfaces and surface properties (`data.raw["surface"]`, `data.raw["surface-property"]`)
+
+`draftsman.data.planets` holds planets, and a planet is only one kind of surface: Space Age's
+space platform is a `surface` prototype with its own `surface_properties` (pressure, gravity and
+magnetic field of 0). The `surface-property` prototypes carry each property's `default_value`,
+the value a surface that does not state a property has. Both are needed to decide what works
+where -- a recipe's or an entity's `surface_conditions` against a surface's properties: that an
+asteroid collector works on a platform and not on Nauvis, that a foundry recipe needs Vulcanus's
+pressure. `extract_surfaces` writes `[surfaces, properties]` to `surfaces.pkl`, loaded by
+`draftsman.data.surfaces` as `raw` and `properties`.
+
+### The committed default data carries the additions
 
 The data files committed on this branch are what an installation without a profile reads — CI,
-for one. `resources.pkl` and `asteroid_chunks.pkl` there are extracted from Factorio 2.0.77 with
+for one. `resources.pkl`, `asteroid_chunks.pkl` and `surfaces.pkl` there are extracted from Factorio 2.0.77 with
 base, Space Age, Quality and Elevated Rails, the same set the other committed files come from.
-Before, the default data had neither, so every Space Age item mined rather than crafted
+Before, the default data had none of them, so every Space Age item mined rather than crafted
 (calcite, tungsten ore, the chunks) looked impossible to obtain. The other committed files are
 left as they were: re-extracting the same set reproduces them apart from the recipe-order noise
 described under **Verified**.
