@@ -1,0 +1,42 @@
+name: Sync with upstream
+
+# Keeps main-forge rebased on redruin1/factorio-draftsman main.
+# Scheduled workflows only run from the repository's default branch.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main-forge
+          fetch-depth: 0
+          submodules: false
+          # GITHUB_TOKEN cannot push changes to .github/workflows (upstream has some).
+          # Optionally set a PAT with the "workflow" scope as the SYNC_PUSH_TOKEN secret.
+          token: ${{ secrets.SYNC_PUSH_TOKEN || github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+      - name: Rebase on upstream, test, push
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # Run a copy: the rebase rewrites the working tree, including this script.
+          cp .github/scripts/sync-upstream.sh "$RUNNER_TEMP/sync-upstream.sh"
+          bash "$RUNNER_TEMP/sync-upstream.sh"
