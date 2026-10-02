@@ -1,3 +1,18 @@
+> ### This is a fork
+>
+> Not the upstream project. Go to
+> **[redruin1/factorio-draftsman](https://github.com/redruin1/factorio-draftsman)**
+> for the real thing, its releases and its issue tracker.
+>
+> This fork carries a few fixes reported upstream but not yet merged, plus data extraction
+> that [factorio-forge](https://github.com/Fatoom333/factorio-forge) needs (resources, asteroid
+> chunks, surfaces). See **[FORK.md](FORK.md)** for what each one is.
+>
+> The work lives on the `main-forge` branch, cut from upstream `main`. Everything below is
+> upstream's own README, unchanged.
+
+---
+
 # factorio-draftsman
 
 ![A logo generated with 'examples/draftsman_logo.py'](https://github.com/redruin1/factorio-draftsman/raw/main/docs/img/logo.png)
