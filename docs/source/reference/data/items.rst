@@ -12,8 +12,8 @@
 
         Factorio has a lot of "items", and they're spread out over multiple different prototype categories.
         Draftsman accumulates all of the placable items and any item that can be used as a signal.
-        This includes all production items, as well as items like ``rail-planner``, ``"blueprint``, ``upgrade-planner``, etc.
-        There are however a number of more abstract items (usually used for modding) that are *not* included, such as ``item-with-label``, ``item-with-tags``, ``item-with-entity-data`` and any other generic template item that cannot be manifested inside a blueprint.
+        This includes all production items, as well as items like ``rail-planner``, ``"blueprint``, ``upgrade-planner``, ``item-with-entity-data``, ``item-with-tags``, ``item-with-label`` and ``item-with-inventory``.
+        The last four are usually used by mods as abstract, script-only template items, but nothing in the API stops one from being used as the base type for an ordinary placeable item instead, so they are extracted the same as any other item category.
 
     .. seealso::
 
