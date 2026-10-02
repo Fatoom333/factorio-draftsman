@@ -382,6 +382,10 @@ class TestUtils:
         assert utils.parse_energy("1000KJ") == 1_000_000
         assert utils.parse_energy("60MW") == 1_000_000
 
+        # Fractional
+        assert utils.parse_energy("1.8MW") == 30_000
+        assert utils.parse_energy("0.4kW") == 7
+
         # Unknown unit type specifier
         with pytest.raises(ValueError):
             utils.parse_energy("100MY")

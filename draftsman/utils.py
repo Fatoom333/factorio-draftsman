@@ -900,9 +900,9 @@ def parse_energy(energy_string: str) -> int:
     Converts a Factorio energy description string into a integer number of
     Joules or Watts. Valid inputs match the following regex string::
 
-        "[0..9]+[kKMGTPEZY]?[JW]"
+        "[0-9]+([.][0-9]+)?[kKMGTPEZY]?[JW]"
 
-    Correctly formatted strings start with a valid integer, followed by an
+    Correctly formatted strings start with a valid number, followed by an
     optional magnitude character, finished with either "J" for Joules or "W" for
     Watts.
 
@@ -916,7 +916,7 @@ def parse_energy(energy_string: str) -> int:
 
     :raises ValueError: If the input string is missing it's Joule/Watt
         identifier, it's magnitude character is not recognized, or if the string
-        remainder cannot be parsed to an integer.
+        remainder cannot be parsed to a number.
     """
     energy_chars = {
         "k": 10**3,
@@ -944,7 +944,9 @@ def parse_energy(energy_string: str) -> int:
     else:
         digits_string = energy_string[:-1]
 
-    return round(int(digits_string) * multiplier)
+    # Factorio accepts fractional amounts ("0.4kW", "1.8MW"), as does its
+    # own util.parse_energy, which reads the number with tonumber
+    return round(float(digits_string) * multiplier)
 
 
 def passes_surface_conditions(conditions: list[dict], properties: dict) -> bool:
